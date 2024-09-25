@@ -1,0 +1,60 @@
+---
+title: "Tidying and Transformation"
+author: "Crystal Quezada"
+date: "2024-09-24"
+output: html_document
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r read csv}
+arr_delay <- read_csv("Tidying and Transforming - Arrival Delays.csv", show_col_types = FALSE)
+arr_delay
+```
+
+
+```{r transform}
+tidy_arr_delay <- arr_delay %>% 
+  fill(`...1`, `...2`) %>% 
+  filter(!is.na(`...1`) | !is.na(`...2`)) %>%
+  pivot_longer(
+    cols = `Los Angeles`:`Seattle`,
+    names_to = "City",
+    values_to = "Num_Flights"
+  ) %>%
+  rename(Airline = ...1, Status = ...2) %>% 
+  drop_na(Num_Flights, Airline)
+  
+print(tidy_arr_delay)
+```
+
+```{r sum data}
+sum_data <- tidy_arr_delay %>%
+  group_by(Airline, City, Status) %>%
+  summarize(Total_Flights = sum(Num_Flights), .groups = "drop")
+sum_data
+```
+
+A simple bar graph. I decided to separate the bars of data to gauge the differences in arrival delays. It's quite clear AM West has a greater amount of flights compared to Alaska Airlines, most of which are on time flights. As for delayed flights, Alaska Airlines and AM West have nearly the same amount of delayed flights, which is significant considering Alaska Airlines has fewer than 2,000 on time flights — a nearly 3,000 flight difference.
+
+```{r airline delays}
+ggplot(sum_data, aes(x = Airline, y = Total_Flights, fill = Status)) +
+  geom_bar(stat = "identity", position = "dodge")
+```
+
+I also wanted to see the flight status comparison by city. It appears that most of the on time flights for AM West landed in Phoenix, while most on time Alaska Airlines flights landed in Seattle. Both of these cities had the greatest amount of delays, which is l likely due to a greater number of flights, period.
+
+```{r airline delays wrap}
+ggplot(sum_data, aes(x = Airline, y = Total_Flights, fill = Status)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ City)
+```
+
+
